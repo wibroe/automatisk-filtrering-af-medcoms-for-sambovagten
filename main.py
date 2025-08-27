@@ -1,15 +1,19 @@
 import argparse
 import asyncio
+import datetime
 import logging
 import os
 import sys
+from datetime import datetime
 
+from odk_tools.tracking import Tracker
 from kmd_nexus_client import NexusClientManager 
 from kmd_nexus_client.tree_helpers import filter_by_path
 from automation_server_client import AutomationServer, Workqueue, WorkItemError, Credential
 from excel_loader import load_indsatser_list
 
 nexus: NexusClientManager
+tracker: Tracker
 
 
 def fetch_activities_from_nexus() -> dict:
@@ -117,7 +121,7 @@ async def populate_queue(workqueue: Workqueue):
         workqueue.add_item(
             data={
                 "Medkom-Id": aktivitet["id"],
-                "CPR-nummer": borger["patientIdentifier"]["identifier"]
+                "Cpr": borger["patientIdentifier"]["identifier"]
             },
             reference=f"{aktivitet['id']}",
         )
@@ -135,8 +139,29 @@ async def process_workqueue(workqueue: Workqueue):
             data = item.data  # Item data deserialized from json as dict
  
             try:
-                # Process the item here
-                pass
+                # Find den rette besked
+                borger = nexus.borgere.hent_borger(data["Cpr"])
+                indbakke = nexus.medcom.hent_alle_beskeder(borger)
+                beskedreference = next((b for b in indbakke if b["id"] == data["Medkom-Id"]), None)
+                if beskedreference is None:
+                    raise ValueError(f"Besked ikke fundet med id: {data['Medkom-Id']}")
+                besked_der_skal_arkiveres = nexus.medcom.hent_besked(beskedreference)
+
+                # Opret opgave:
+                opgave = nexus.opgaver.opret_opgave(
+                    objekt=besked_der_skal_arkiveres,
+                    opgave_type="Leverandørvalg",
+                    titel="Leverandørvalg",
+                    ansvarlig_organisation="MedCom SAMBOvagt",
+                    start_dato=datetime.today(),
+                    slut_dato=datetime.today()
+                )
+                if opgave is None:
+                    raise ValueError(f"Kunne ikke oprette opgave for besked: {data['Medkom-Id']}")
+                
+                # Arkivér besked:
+                nexus.medcom.arkiver_besked(besked_der_skal_arkiveres)
+
             except WorkItemError as e:
                 # A WorkItemError represents a soft error that indicates the item should be passed to manual processing or a business logic fault
                 logger.error(f"Error processing item: {data}. Error: {e}")
@@ -188,6 +213,10 @@ if __name__ == "__main__":
         instance=nexus_credential.data["instance"],
     )    
 
+    tracker = Tracker(
+        username=tracking_credential.username, 
+        password=tracking_credential.password
+    )
 
     # Queue management
     if args.queue:

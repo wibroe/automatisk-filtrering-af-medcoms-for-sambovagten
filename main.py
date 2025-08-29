@@ -88,8 +88,15 @@ async def populate_queue(workqueue: Workqueue):
             active_pathways_only=False,
         )
 
-        # Hvis borger ikke har nogen indsatsreferencer, så skip denne aktivitet
+        # Hvis borger ikke har nogen indsatsreferencer, så tilføj denne aktivitet
         if filtrerede_indsats_referencer is None:
+            workqueue.add_item(
+                data={
+                    "Medkom-Id": aktivitet["id"],
+                    "Cpr": borger["patientIdentifier"]["identifier"]
+                },
+                reference=f"{aktivitet['id']}",
+            )
             continue
 
         # Check if any of the filtered indsats references match the Excel data

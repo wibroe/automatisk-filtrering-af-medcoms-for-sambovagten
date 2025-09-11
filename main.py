@@ -14,6 +14,7 @@ from excel_loader import load_indsatser_list
 
 nexus: NexusClientManager
 tracker: Tracker
+procesnavn = "Automatisk filtrering af Medcoms for Sambovagten"
 
 
 def fetch_activities_from_nexus() -> dict:
@@ -168,6 +169,7 @@ async def process_workqueue(workqueue: Workqueue):
                 
                 # Arkivér besked:
                 nexus.medcom.arkiver_besked(besked_der_skal_arkiveres)
+                tracker.track_task(procesnavn)
 
             except WorkItemError as e:
                 # A WorkItemError represents a soft error that indicates the item should be passed to manual processing or a business logic fault

@@ -162,7 +162,7 @@ async def process_workqueue(workqueue: Workqueue):
                     titel="Leverandørvalg",
                     ansvarlig_organisation="MedCom SAMBOvagt",
                     start_dato=datetime.today(),
-                    slut_dato=datetime.today()
+                    forfald_dato=datetime.today()
                 )
                 if opgave is None:
                     raise ValueError(f"Kunne ikke oprette opgave for besked: {data['Medkom-Id']}")

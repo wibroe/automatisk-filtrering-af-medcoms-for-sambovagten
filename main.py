@@ -29,7 +29,6 @@ def fetch_activities_from_nexus() -> dict:
     præferencer = nexus.nexus_client.get("preferences").json()
     #look through ACTIVITY_LIST and find the one thats called "MedCom - Plejeforløbsplaner + Udskrivningsrapporter"
     aktivitetsliste = next((item for item in præferencer.get("ACTIVITY_LIST", []) if item.get("name") == "MedCom - Plejeforløbsplaner + Udskrivningsrapporter"), None)
-    
     if not aktivitetsliste:
         logger.error("Could not find 'MedCom - Plejeforløbsplaner + Udskrivningsrapporter' in ACTIVITY_LIST")
         return {}
@@ -77,7 +76,7 @@ async def populate_queue(workqueue: Workqueue):
     if not activities_dict:
         logger.warning("No activities found, nothing to process")
         return
-
+    
     for aktivitet in activities_dict.values():
         ignore_activity = False
         borger = nexus.borgere.hent_borger(aktivitet["patients"][0]["patientIdentifier"]["identifier"])
@@ -85,7 +84,7 @@ async def populate_queue(workqueue: Workqueue):
         borgers_indsatsreferencer = nexus.borgere.hent_referencer(pathway)
         filtrerede_indsats_referencer = filter_by_path(
             borgers_indsatsreferencer,
-            path_pattern="/Sundhedsfagligt grundforløb/*/Indsatser/basketGrantReference",
+            path_pattern="/Sundhedsfagligt grundforløb/*/Indsatser/*",
             active_pathways_only=False,
         )
 

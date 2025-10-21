@@ -115,7 +115,7 @@ async def populate_queue(workqueue: Workqueue):
 
             if matching_interventions:
                 indsats = nexus.indsatser.hent_indsats(indsats_ref)
-                if indsats["workflowState"]["name"] in ["Bestilt", "Ændret", "Bevilliget", "Anvist"]:
+                if indsats["workflowState"]["name"] in ["Bestilt", "Ændret", "Bevilliget", "Anvist", "Fremtidigt ændret"]:
                     ignore_activity = True
                     logger.info(f"Ignoring activity - found matching active intervention: {indsats_name} (matches: {matching_interventions})")
                     break
